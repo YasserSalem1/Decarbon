@@ -1,9 +1,13 @@
 import streamlit as st
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from PIL import Image
 import plotly.graph_objects as go
-from backend import SimulationData
-from data_viz import datavisualize
-from chabot import handle_chat
+from backend.backend import SimulationData
+from backend.data_viz import datavisualize
+from backend.chabot import handle_chat
 
 # === Page Config ===
 st.set_page_config(layout="wide", page_title="NetZero Optimizer")
