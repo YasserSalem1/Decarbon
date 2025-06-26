@@ -3,6 +3,7 @@ from PIL import Image
 import plotly.graph_objects as go
 from backend import SimulationData
 from data_viz import datavisualize
+from chabot import handle_chat
 
 # === Page Config ===
 st.set_page_config(layout="wide", page_title="NetZero Optimizer")
@@ -14,6 +15,8 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "selected_chart" not in st.session_state:
     st.session_state.selected_chart = "pie"
+if "chat_input" not in st.session_state:
+    st.session_state.chat_input = ""
 
 # === Load Images for header ===
 solar_img = Image.open("images/ren.png")
@@ -36,60 +39,42 @@ sim.energy.fossil_kw = st.sidebar.slider("⛽ Fossil Power (kW)", 0, 200, sim.en
 for name, machine in sim.machines.items():
     machine.is_on = st.sidebar.toggle(f"⚙️ {name}", machine.is_on)
 
-# === Assistant Panel Toggle ===
-if st.sidebar.button("🗨️ Toggle Assistant Panel"):
+if st.sidebar.button("🗨️ Assistant Panel"):
     st.session_state.show_panel = not st.session_state.show_panel
 
 # === Page Title ===
 st.title("🔋 NetZero Optimizer – Real-Time Load Simulation")
 st.markdown("---")
 
-# === Assistant Panel (Native Layout) ===
+# === Assistant Panel ===
 if st.session_state.show_panel:
     st.markdown("### 🤖 Assistant Panel")
-    col1, col2 = st.columns([3, 1])  # 75% visualization, 25% chat
+    col1, col2 = st.columns([3, 1])
 
-    # --- Visualization ---
     with col1:
         st.markdown("#### 📊 Energy Visualization")
         datavisualize(st.session_state.selected_chart)
 
-    # --- Chatbot ---
     with col2:
         st.markdown("#### 💬 Ask NetZero Bot")
 
-        user_input = st.text_input("You:", key="chat_input")
+        if len(st.session_state.chat_history) == 2:
+            user_msg, bot_msg = st.session_state.chat_history
+            with st.chat_message("user"):
+                st.markdown(user_msg[1])
+            with st.chat_message("assistant"):
+                st.markdown(bot_msg[1])
 
-        if user_input:
-            st.session_state.chat_history.append(("You", user_input))
+        def process_chat():
+            user_input = st.session_state.chat_input.strip()
+            if not user_input:
+                return
+            selected_chart, bot_response = handle_chat(user_input, st.session_state.selected_chart)
+            st.session_state.selected_chart = selected_chart
+            st.session_state.chat_history = [("You", user_input), ("NetZero Bot", bot_response)]
+            st.session_state.chat_input = ""
 
-            # Simple keyword matching for charts
-            input_lower = user_input.lower()
-            if "bar" in input_lower:
-                st.session_state.selected_chart = "bar"
-                st.session_state.chat_history.append(("NetZero Bot", "Showing the Bar Chart 📊"))
-            elif "line" in input_lower:
-                st.session_state.selected_chart = "line"
-                st.session_state.chat_history.append(("NetZero Bot", "Here's the Line Chart 📈"))
-            elif "gauge" in input_lower:
-                st.session_state.selected_chart = "gauge"
-                st.session_state.chat_history.append(("NetZero Bot", "Gauge Chart loaded ⛽"))
-            elif "stacked" in input_lower or "area" in input_lower:
-                st.session_state.selected_chart = "stacked"
-                st.session_state.chat_history.append(("NetZero Bot", "Stacked area chart displayed 🌞🌬⛽"))
-            elif "pie" in input_lower:
-                st.session_state.selected_chart = "pie"
-                st.session_state.chat_history.append(("NetZero Bot", "Back to Pie Chart 🥧"))
-            else:
-                st.session_state.chat_history.append(("NetZero Bot", "I can show: pie, bar, line, gauge, stacked. Try one!"))
-
-        # Display chat messages 
-        for speaker, message in st.session_state.chat_history[-1:]:
-            with st.chat_message(speaker if speaker == "You" else "assistant"):
-                st.markdown(message)
-
-        # if st.button("❌ Close Assistant Panel"):
-        #     st.session_state.show_panel = False
+        st.text_input("You:", key="chat_input", on_change=process_chat)
 
     st.divider()
 
@@ -162,7 +147,7 @@ if st.button("🔄 Optimize Machine Usage"):
     for i, usage_slot in enumerate(usage, 1):
         st.write(
             f"""
-            🔢 **Hour {usage_slot['hour']}**
+            📂 **Hour {usage_slot['hour']}**
             - 🔋 **Total Demand**: `{usage_slot['total_demand']} kW`
             - ☀️ **Renewable Used**: `{usage_slot['renewable_used']} kW`
             - ⛽ **Fossil Used**: `{usage_slot['fossil_used']} kW`
