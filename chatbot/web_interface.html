@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renewable Energy Analysis Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #2196F3, #4CAF50);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .query-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 5px solid #4CAF50;
+        }
+        
+        .query-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+        
+        .query-input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .analyze-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .analyze-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2196F3;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .results {
+            display: none;
+        }
+        
+        .analysis-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+        
+        .card-content {
+            padding: 25px;
+            line-height: 1.8;
+        }
+        
+        .metadata {
+            background: #f0f8ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .metadata-item {
+            margin-bottom: 10px;
+        }
+        
+        .metadata-label {
+            font-weight: bold;
+            color: #2196F3;
+            display: inline-block;
+            width: 120px;
+        }
+        
+        .answer-content {
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .answer-content h1, .answer-content h2, .answer-content h3 {
+            color: #2196F3;
+            margin: 20px 0 10px 0;
+        }
+        
+        .answer-content ul, .answer-content ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .answer-content li {
+            margin-bottom: 8px;
+        }
+        
+        .answer-content code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .error {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            color: #d32f2f;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .success {
+            background: #e8f5e8;
+            border: 1px solid #4CAF50;
+            color: #2e7d32;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌱 Renewable Energy Analysis</h1>
+            <p>Advanced AI-Powered Energy Forecasting & Optimization</p>
+        </div>
+        
+        <div class="content">
+            <div class="query-section">
+                <h3>🔍 Enter Your Energy Analysis Query</h3>
+                <textarea 
+                    id="queryInput" 
+                    class="query-input" 
+                    placeholder="Example: What are the solar and wind conditions in Berlin for energy planning next week?"
+                    rows="3"
+                ></textarea>
+                <button id="analyzeBtn" class="analyze-btn">🚀 Analyze Energy Data</button>
+            </div>
+            
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Analyzing energy data and generating comprehensive insights...</p>
+            </div>
+            
+            <div id="results" class="results">
+                <!-- Results will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const queryInput = document.getElementById('queryInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+
+        // Sample queries for demonstration
+        const sampleQueries = [
+            "What are the solar and wind conditions in Berlin for energy planning next week?",
+            "When are the optimal hours in Munich next 5 days to schedule energy-intensive operations?",
+            "Analyze wind and solar variability in Hamburg for optimal battery storage strategies",
+            "What day has the highest solar radiation in London next 7 days?",
+            "Show me industrial electricity demand patterns for grid optimization"
+        ];
+
+        // Add sample query on page load
+        window.addEventListener('load', () => {
+            const randomQuery = sampleQueries[Math.floor(Math.random() * sampleQueries.length)];
+            queryInput.value = randomQuery;
+        });
+
+        analyzeBtn.addEventListener('click', async () => {
+            const query = queryInput.value.trim();
+            
+            if (!query) {
+                alert('Please enter a query');
+                return;
+            }
+
+            // Show loading state
+            analyzeBtn.disabled = true;
+            loading.style.display = 'block';
+            results.style.display = 'none';
+
+            try {
+                const response = await fetch('http://localhost:8000/unified_query/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        include_images: false
+                    })
+                });
+
+                const data = await response.json();
+
+                // Hide loading state
+                loading.style.display = 'none';
+                analyzeBtn.disabled = false;
+
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    displayError('Failed to fetch analysis: ' + (data.detail || 'Unknown error'));
+                }
+
+            } catch (error) {
+                loading.style.display = 'none';
+                analyzeBtn.disabled = false;
+                displayError('Network error: ' + error.message);
+            }
+        });
+
+        function displayResults(data) {
+            results.innerHTML = '';
+            
+            // Metadata card
+            const metadataCard = document.createElement('div');
+            metadataCard.className = 'analysis-card';
+            metadataCard.innerHTML = `
+                <div class="card-header">📊 Analysis Metadata</div>
+                <div class="card-content">
+                    <div class="metadata">
+                        <div class="metadata-item">
+                            <span class="metadata-label">Query Type:</span>
+                            <span>${data.query_type || 'N/A'}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Location:</span>
+                            <span>${data.location || 'N/A'}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Time Period:</span>
+                            <span>${data.days || 'N/A'} days</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Data Source:</span>
+                            <span>${data.source || 'N/A'}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Status:</span>
+                            <span class="${data.status === 'success' ? 'success' : 'error'}">${data.status || 'Unknown'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Analysis content card
+            const analysisCard = document.createElement('div');
+            analysisCard.className = 'analysis-card';
+            analysisCard.innerHTML = `
+                <div class="card-header">🧠 AI Analysis & Recommendations</div>
+                <div class="card-content">
+                    <div class="answer-content">
+                        ${formatAnswer(data.answer || 'No analysis available')}
+                    </div>
+                </div>
+            `;
+            
+            results.appendChild(metadataCard);
+            results.appendChild(analysisCard);
+            results.style.display = 'block';
+        }
+
+        function formatAnswer(answer) {
+            // Convert markdown-like formatting to HTML
+            return answer
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>')
+                .replace(/^/, '<p>')
+                .replace(/$/, '</p>')
+                .replace(/<p><br>/g, '<p>')
+                .replace(/<br><\/p>/g, '</p>');
+        }
+
+        function displayError(message) {
+            results.innerHTML = `
+                <div class="error">
+                    <strong>❌ Error:</strong> ${message}
+                </div>
+            `;
+            results.style.display = 'block';
+        }
+
+        // Allow Enter key to submit
+        queryInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                analyzeBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
